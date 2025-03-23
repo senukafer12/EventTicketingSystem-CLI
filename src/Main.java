@@ -29,6 +29,47 @@ public class Main {
 
         // Create ticket pool
         TicketPool ticketPool = new TicketPool(new ArrayList<>(), config.getMaxTicketCapacity(), config.getTotalTickets());
+
+        // Shared counter for tickets purchased
+        final Object lock = new Object(); // Lock object to synchronize access to purchasedTickets
+        Thread[] vendorThreads = new Thread[numofVendors];
+        Thread[] customerThreads = new Thread[numofCustomers];
+
+        // Start a thread to handle user input while the simulation is running
+        Thread inputThread = new Thread(() -> {
+            while (true) {
+                System.out.println("\nEnter your choice:");
+                System.out.println("1. Start Simulation");
+                System.out.println("2. End Ticketing (Exit)");
+                int userChoice = inputValidate("Please select an option: ");
+
+                switch (userChoice) {
+                    case 1:
+                        // Start simulation
+                        if (!simulationRunning) {
+                            System.out.println("Starting simulation...");
+                            startSimulation(vendorThreads, customerThreads, numofVendors, numofCustomers, ticketPool, config, lock);
+                            simulationRunning = true;
+                        } else {
+                            System.out.println("Simulation is already running.");
+                        }
+                        break;
+
+                    case 2:
+                        // End ticketing and exit
+                        System.out.println("Ending ticketing. Exiting the system.");
+                        stopSimulation(vendorThreads, customerThreads);  // Gracefully stop all threads
+                        System.exit(0);  // Exit the application with exit code 0
+                        break;
+
+                    default:
+                        System.out.println("Invalid option. Please try again.");
+                }
+            }
+        });
+
+        // Start the input thread
+        inputThread.start();
     }
 
     // Start the simulation process
